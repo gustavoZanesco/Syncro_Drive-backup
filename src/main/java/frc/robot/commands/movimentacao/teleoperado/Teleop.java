@@ -2,7 +2,6 @@ package frc.robot.commands.movimentacao.teleoperado;
 
 import edu.wpi.first.wpilibj2.command.CommandBase;
 import frc.robot.RobotContainer;
-import frc.robot.commands.movimentacao.AlinharComUltra;
 import frc.robot.gamepad.OI;
 import frc.robot.subsystems.DriveSubsystem;
 //import frc.robot.subsystems.ManipuladorSubsystem;
@@ -119,49 +118,83 @@ public class Teleop extends CommandBase
             }
          }
 
-        if (oi.getPS4Button()) {
-            subManipulador.motor.resetEncoder();
-        }
-
-        /*else if (oi.getBotaoResetGiroscopio() && oi.getDriveXButton()) {
-            subManipulador.setEstadoGarra("soltarPalete");
-        }
-
-        else if (oi.getBotaoResetGiroscopio() && oi.modoSeguroPS4()) {
-            subManipulador.setEstadoGarra("pegarPalete");
-        };
-
-        else if ( oi.modoSeguroPS4() && (oi.getDriveLeftTrigger() || oi.getDriveRightTrigger())) {
-            subManipulador.setEstadoGarra("soltarCubo");
-        }*/
-
+         
+         /*else if (oi.getBotaoResetGiroscopio() && oi.getDriveXButton()) {
+             subManipulador.setEstadoGarra("soltarPalete");
+            }
             
-
-        // ativacao dos atuadores com as entradas do controle
-
-        /*double variavel = subDrive.giroscopio.getAngle();
-        double setpoint = 0;
-
-        controleAngulo.setP(0.075);
-        controleAngulo.setI(0.05);
-
-        double vZ = controleAngulo.calcular(variavel, setpoint);
-
-        if (Math.abs(vZ) < 0.05) { vZ = 0; }
-*/
+            else if (oi.getBotaoResetGiroscopio() && oi.modoSeguroPS4()) {
+                subManipulador.setEstadoGarra("pegarPalete");
+            };
+            
+            else if ( oi.modoSeguroPS4() && (oi.getDriveLeftTrigger() || oi.getDriveRightTrigger())) {
+                subManipulador.setEstadoGarra("soltarCubo");
+            }*/
+            
+            
+            
+            // ativacao dos atuadores com as entradas do controle
+            
+            /*double variavel = subDrive.giroscopio.getAngle();
+            double setpoint = 0;
+            
+            controleAngulo.setP(0.075);
+            controleAngulo.setI(0.05);
+            
+            double vZ = controleAngulo.calcular(variavel, setpoint);
+            
+            if (Math.abs(vZ) < 0.05) { vZ = 0; }
+            */
         if ( oi.getDriveLeftTrigger() ) { inputLeftX = 0; };
         if ( oi.getDriveRightTrigger() ) { inputLeftY = 0; }; 
-
-        subDrive.synchroDrive_local(-inputLeftX * 50, -inputLeftY * 50, -inputRightX * 40);
-
-        if (oi.getTriangle()) { subManipulador.acionarElevador(40); }
-        else if(oi.getXis()) { subManipulador.acionarElevador(-40); }
-        else { subManipulador.motor.stop(); }
-
+        
+        subDrive.movimentar(-inputLeftY * 50, -inputRightX * 40);
+        
+        if (oi.getTriangle()) { subManipulador.acionarElevadorY(40); }
+        else if(oi.getXis()) { subManipulador.acionarElevadorY(-40); }
+        else { subManipulador.motorEixoY.stop(); }
+        
         if (oi.getDriveRightBumper()) { subManipulador.setBase("pegar"); }
         else if (oi.getDriveLeftBumper()) { subManipulador.setBase("guardar"); }
+        else {
+            subManipulador.motorEixoZ.stop();
+        }
         
-        //if (oi.getBotaoResetGiroscopio()) { new AlinharComUltra().schedule(); }
+        if (!oi.getBotaoResetGiroscopio()) {
+            if (oi.getDriveXButton() ) {
+                subManipulador.setEstadoGarra("pegarCubo", true);
+            }
+            else if (oi.modoSeguroPS4() ) {
+                subManipulador.setEstadoGarra("soltarCubo", true); 
+            }
+        }
+        else { 
+            if (oi.getDriveXButton() ) {
+                subManipulador.setEstadoGarra("pegarPalete", true);
+            }
+            else if (oi.modoSeguroPS4() ) {
+                subManipulador.setEstadoGarra("prepararPalete", true); 
+            }
+        }
+
+        if (oi.getSquare()) {
+            subManipulador.setEixoX("esquerda");
+        }
+        else if (oi.getCircle()) {
+            subManipulador.setEixoX("direita");
+        }
+
+        if (oi.getDriveRightTrigger()) {
+            subManipulador.setAnguloGarra("0_graus");
+        }
+        else if (oi.getDriveLeftTrigger()) {
+            subManipulador.setAnguloGarra("90_graus");
+        }
+        
+        if (oi.getPS4Button()) {
+            subManipulador.motorEixoY.resetEncoder();
+        }
+        //if (oi.getBotaoResetGiroscopio()) { new AlinharComUlt ra().schedule(); }
         //subDrive.omnidiretional_Global  (-inputLeftX * 60, -inputLeftY * 60, -inputRightX * 60 );
 
         

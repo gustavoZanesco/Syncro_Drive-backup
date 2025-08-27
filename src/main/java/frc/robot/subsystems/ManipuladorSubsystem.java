@@ -4,37 +4,46 @@ import com.studica.frc.Servo;
 import com.studica.frc.TitanQuad;
 import com.studica.frc.TitanQuadEncoder;
 
-import edu.wpi.first.wpilibj.MotorSafety;
 import edu.wpi.first.wpilibj.smartdashboard.SmartDashboard;
 import edu.wpi.first.wpilibj2.command.SubsystemBase;
 import frc.robot.Constants;
+import frc.robot.utils.FiltroVelocidade;
 import frc.robot.utils.Motor;
 import frc.robot.utils.PIDControl;
 
 public class ManipuladorSubsystem extends SubsystemBase {
 
-    public Motor motor;
+    public boolean manipuladorAtivo = false;
 
-    public Servo servoAnguloGarra, servoPosCubos, servoGarra, servoAnguloBase;
+    public Motor motorEixoY, motorEixoZ;
 
-    double posicaoDesejada = 0;
-    double posicaoAtual = 0;
-    double erroPosicao = 0;
-    double velocidadeDesejada = 0;
+    public Servo servoGarra_EIXO_Z, servoEIXO_X, servoGarra;
 
-    boolean chegouY = false;
+    private double posicaoDesejada = 0;
+    private double posicaoAtual = 0;
+    private double erroPosicao = 0;
+    private double velocidadeDesejada = 0;
+
+    private boolean chegouY = false;
+
+    private double posicaoAtualY = 0;
+
+    private FiltroVelocidade filtroBase, filtroElevador, filtroEixoX;
 
     public ManipuladorSubsystem() {
-        TitanQuad titan1 = new TitanQuad(Constants.titanID, 15600, Constants.motorElevador);
-        TitanQuadEncoder encoder1 = new TitanQuadEncoder(titan1, Constants.motorElevador, Constants.distPorRevElevador);
+        TitanQuad titan1 = new TitanQuad(Constants.titanID, 15600, Constants.motorElevadorY);
+        motorEixoY = new Motor(titan1, new TitanQuadEncoder(titan1, Constants.motorElevadorY, Constants.distPorRevElevador), new PIDControl(2, 1), "Motor Elevador Y");
 
-        motor = new Motor(titan1, encoder1, new PIDControl(2, 1), "Motor Elevador");
+        TitanQuad titan2 = new TitanQuad(Constants.titanID, 15600, Constants.motorElevadorZ);
+        motorEixoZ = new Motor(titan2, new TitanQuadEncoder(titan2, Constants.motorElevadorZ, Constants.distPorRevElevador), new PIDControl(1, 0.5), "Motor Elevador Z");
+        
+        servoEIXO_X = new Servo(8);
+        servoGarra_EIXO_Z = new Servo(7);
+        servoGarra = new Servo(6);
 
-        /*servoAnguloGarra = new Servo(Constants.servoAnguloGarra);
-        servoGarra = new Servo(Constants.servoGarra);
-        servoPosCubos = new Servo(Constants.servoX);*/
-        servoAnguloBase = new Servo(8);
-        // motor.resetEncoder();
+        filtroBase = new FiltroVelocidade(200, 400, 20, 10);
+        filtroElevador = new FiltroVelocidade(150, 150, 20, 13);
+        filtroEixoX = new FiltroVelocidade(150, 150, 20, 13);
     }
     
     /* ------------------ ELEVADOR ------------------ */
@@ -43,26 +52,14 @@ public class ManipuladorSubsystem extends SubsystemBase {
         return chegouY;
     }
     
-    // movimentar eleveador a partir de logica de controle
+    // movimentar elevador a partir de logica de controle
     public void elevadorY(double setPoint) {
-        double tolerancia = 0;
+        double tolerancia = 2;
 
-        switch ((int) setPoint) {
-            case 0:
-                tolerancia = 5;
-                break;
         
-            case 274:
-                tolerancia = 5;
-                break;
-            default:
-                tolerancia = 2;
-                break;
-        }
-        
-        posicaoDesejada = setPoint;
-        double erroY = setPoint - posicaoAtual;
-        erroPosicao = erroY;
+        //posicaoDesejada = setPoint;
+        double erroY = setPoint - posicaoAtualY;
+        //erroPosicao = erroY;
 
         chegouY = Math.abs(erroY) < tolerancia;
 
@@ -71,301 +68,197 @@ public class ManipuladorSubsystem extends SubsystemBase {
             vElevator = 0;
         }
 
-        acionarElevador(vElevator);
+        acionarElevadorY(vElevator);
     }
 
     // movimentar elevador de forma simples com velocidade (RPM)
-    public void acionarElevador(double velocidade) {
-        double vMax = 30;
-        double vMin = 5;
-
-        double vel = filtrarVelocidade(velocidade, vMax, vMin);
-    
-        motor.setVelocidade(vel);
+    public void acionarElevadorY(double velocidade) {
+        velocidade = filtroElevador.filtrarVelocidade(velocidade);
+        motorEixoY.setVelocidade(velocidade);
     }
 
     double distPasssada = 0;
 
     public void calcularDistanciaPercorrida() {
-        double distElevador = (motor.getEncoderAtual() / 1464) * Constants.distPorRevElevador;
+        double distElevadorY = (motorEixoY.getAngulo() / 360) * Constants.distPorRevElevador;
 
-        posicaoAtual = distElevador;
+        posicaoAtualY = distElevadorY;
+        //anguloAtualZ = atualZ * 0.5; // com relacao 1/2*/
     }
 
     public void atualizarPosicaoElevador(double posicao) {
-        posicaoAtual = posicao;
+        posicaoAtualY = posicao;
     }
 
     public double getPosicaoElevador() {
         return posicaoAtual;
     }
 
- /* ------------------ SERVOS ------------------ */
-double anguloAtual = 0;
+    /* ------------------ SERVOS ------------------ */
 
-public boolean setBase(String direcao) {
-    double anguloAlvo = 0;
+    private double vBaseFinal = 0;
+    public boolean setBase(String direcao) {
+        double anguloAlvo = 0;
 
-    switch (direcao) {
-        case "inicial":
-            anguloAlvo = 0;
-            break;
+        switch (direcao) {
+            case "inicial":
+                anguloAlvo = 90;
+                break;
 
-        case "guardar":
-            anguloAlvo = 180;
-            break;
+            case "guardar":
+                anguloAlvo = 183;
+                break;
 
-        case "pegar":
-            anguloAlvo = 0;
-            break;
+            case "pegar":
+                anguloAlvo = 0;
+                break;
 
-        case "45_graus":
-            anguloAlvo = 237.75;
-            break;
+            case "45_graus":
+                anguloAlvo = 45;
+                break;
 
-        case "-45_graus":
-            anguloAlvo = 144.25;
-            break;
+            case "-45_graus":
+                anguloAlvo = -45;
+                break;
 
-        case "cuboEsquerdo":
-            anguloAlvo = 13;
-            break;
+            case "cuboEsquerdo":
+                anguloAlvo = 13;
+                break;
 
-        case "cuboDireito":
-            anguloAlvo = 28.5;
-            break;
+            case "cuboDireito":
+                anguloAlvo = 28.5;
+                break;
     }
 
     // taxa de variação em graus por segundo
-    double taxa = 45; // ex: 90° por segundo
-    double dt = 0.02; // 20ms do periodic
-    double passo = taxa * dt;
+        double erroZ = anguloAlvo - (motorEixoZ.getAngulo() * 0.5);
+        double vBase = erroZ * 0.25;
 
-    // aplica a rampa angular
-    anguloAtual = rampaAngular(anguloAtual, anguloAlvo, passo);
+        vBase = filtroBase.filtrarVelocidade(vBase);
 
-    servoAnguloBase.setAngle(anguloAtual);
+        vBaseFinal = filtroBase.rampaVelocidade(vBaseFinal, vBase);
 
-    SmartDashboard.putNumber("servoBase", servoAnguloBase.getAngle());
+        chegouY = Math.abs(vBase) < 0.5;
 
-    // considera no setpoint se a diferença for menor que 1 grau
-    boolean noSetPoint = Math.abs(anguloAlvo - anguloAtual) < 1.0;
+        if (chegouY) {
+            vBaseFinal = 0;
+        }
 
-    return noSetPoint;
-}
+        motorEixoZ.setVelocidade(vBaseFinal);
 
-private double rampaAngular(double atual, double alvo, double passo) {
-    double erro = alvo - atual;
-
-    if (Math.abs(erro) <= passo) {
-        return alvo; // chegou no alvo
+        return chegouY;
     }
 
-    return atual + Math.copySign(passo, erro);
-}
-
-
-    double anguloGarra = 55.5;
-
+    private double anguloGarra = 55.5;
     public boolean setAnguloGarra(String direcao) {
-        double anguloBase = 55.5;
+        double angDesejado = 55.5;
         switch (direcao) {
-        case "0_graus":
-            anguloBase = 55.5; 
-            break;
+            case "0_graus":
+                angDesejado = 55.5; 
+                break;
 
-        case "90_graus":
-            anguloBase = 147.45; 
-            break;  
+            case "90_graus":
+                angDesejado = 147.45; 
+                break;  
+        }
 
-        case "cuboEsquerdo":
-            anguloBase = 64.5;
-            break;
+        double anguloAtual = servoGarra_EIXO_Z.getAngle();
         
-        case "cuboDireito":
-            anguloBase = 49;
-            break;
-        }
-
-        anguloGarra = rampaVelocidade(anguloGarra, anguloBase, 4, 4);
-        servoAnguloGarra.setAngle(anguloGarra);
-
-        double erro = anguloBase - anguloGarra;
-
-        boolean noSetPoint = Math.abs(erro) == 0;
-
-        SmartDashboard.putString("servoAngGarra", servoAnguloGarra.getAngle() + "");
-
-        return noSetPoint;
+        // aplica rampa no movimento do servo
+        servoGarra_EIXO_Z.setAngle(angDesejado);
+        
+        double erro = angDesejado - anguloAtual;
+        boolean alinhado = Math.abs(erro) < 2.0; // tolerância de 2 graus
+        
+        return alinhado;
     }
 
-    double anguloPos = 150;
-
-    public boolean moverMesa(String posicao) {
-        double angDesejado = 150;
-
-        switch (posicao) {
-        case "central":
-            angDesejado = 150;
-            break;
-
-        case "bloco1":
-            angDesejado = 232;  
-            break;
-
-        case "bloco2":
-            angDesejado = 300;
-            break;
-
-        case "bloco3":
-            angDesejado = 55;
-            break;
-
-        case "bloco4":
-            angDesejado = 13;
-            break;
-
-        case "conjunto1":
-            angDesejado = 34.95;
-            break;  
-
-        case "conjunto2":
-            angDesejado = 300;
-        }
-
-        anguloPos = rampaVelocidade(anguloPos, angDesejado, 5, 5);
-
-        double erro = angDesejado - anguloPos;
-
-        boolean noSetPoint = Math.abs(erro) == 0;
-
-        if (noSetPoint) {
-            servoPosCubos.stopMotor();
-        } else {
-            servoPosCubos.setAngle(anguloPos);
-        }
-
-        SmartDashboard.putString("servoMesa", servoPosCubos.getAngle() + "");
-     
-        return noSetPoint;
-    }
-
-    double angServoGarra = 30;
+    private double angServoGarra = 30;
     public boolean setEstadoGarra(String estado, boolean rapido) {
-        double anguloDesejado = 0;
+        double angDesejado = 0;
     
         switch (estado) {
         case "prepararCubo":
-            anguloDesejado = 165;
+            angDesejado = 165;
             break;
 
         case "pegarCubo":
-            anguloDesejado = 17;
+            angDesejado = 0;
             break;
 
         case "soltarCubo":
-            anguloDesejado = 84;
+            angDesejado = 84;
             break;
 
         case "pegarCUBOS":
-            anguloDesejado = 125;
+            angDesejado = 125;
             break;
 
         case "prepararPalete":
-            anguloDesejado = 238;
+            angDesejado = 238;
             break;
 
         case "pegarPalete":
-            anguloDesejado = 165;
+            angDesejado = 150;
             break;
 
         case "soltarPalete":
-            anguloDesejado = 125;
+            angDesejado = 125;
             break;
         }
 
-        if (rapido) {
-            servoGarra.setAngle(anguloDesejado);
-            angServoGarra = servoGarra.getAngle();
-            return true;
-        }
-        else {
-            angServoGarra = rampaVelocidade(angServoGarra, anguloDesejado, 7, 7); 
-
-            servoGarra.setAngle(angServoGarra);
-        }
-
-        return angServoGarra == anguloDesejado;
+        double anguloAtual = servoGarra.getAngle();
+        
+        // aplica rampa no movimento do servo
+        
+        servoGarra.setAngle(angDesejado);
+        
+        double erro = angDesejado - anguloAtual;
+        boolean alinhado = Math.abs(erro) < 2.0; // tolerância de 2 graus
+        
+        return alinhado;
     }
 
-    public void atualizarPos(double valor) {
-        posicaoAtual = valor;
+    private double angEIXO_X = 150;
+    public boolean setEixoX(String posicao) {
+        double setPoint = 150;
+        switch (posicao) {
+            case "central": 
+                setPoint = 150;
+                break;
+
+            case "esquerda":
+                setPoint = 0;
+                break;
+
+            case "direita":
+                setPoint = 300;
+                break;
+        }
+
+        double anguloAtual = servoEIXO_X.getAngle();
+        
+        // aplica rampa no movimento do servo
+        angEIXO_X = filtroEixoX.rampaVelocidade(angEIXO_X, setPoint);
+        servoEIXO_X.setAngle(angEIXO_X);
+        
+        double erro = setPoint - anguloAtual;
+        boolean alinhado = Math.abs(erro) < 2.0; // tolerância de 2 graus
+        
+        return alinhado;
     }
 
     @Override
     public void periodic() {
-        SmartDashboard.putString("Posicao Atual Elevador", posicaoAtual + "");
+        SmartDashboard.putString("Posicao Atual Elevador", posicaoAtualY + "");
         SmartDashboard.putString("Velocidade Elevador", velocidadeDesejada + "");
         SmartDashboard.putString("Posicao Desejada", posicaoDesejada + "");
         SmartDashboard.putString("ERRO Posicao Elevador", erroPosicao + "");
         
         calcularDistanciaPercorrida();
-        motor.atualizarTelemetria();
-    }
+        motorEixoY.atualizarTelemetria();
+        motorEixoZ.atualizarTelemetria();
 
-    public double rampaVelocidade(double atual, double desejada, double deltaAcel, double deltaDesacel) {
-
-        double erro = desejada - atual;
-
-        // Se já está dentro da margem, vai direto
-        if (Math.abs(erro) < Math.min(deltaAcel, deltaDesacel)) {
-            return desejada;
-        }
-
-        double delta;
-        // Acelerando (se aproximando da desejada a partir de velocidade menor)
-        if (Math.signum(erro) == Math.signum(desejada)) {
-            // mesma direção → aceleração
-            delta = Math.copySign(deltaAcel, erro);
-
-        } else {
-            // direções opostas → desaceleração
-            delta = Math.copySign(deltaDesacel, erro);
-
-        }
-        double resultado = atual + delta;
-
-        if (Math.abs(resultado) < 0.01 && Math.abs(desejada) < 0.01) {
-            return 0.0;
-        }
-
-        return resultado;
-    }
-
-    /*
-     * -------------------------------------- CLASSES AUXILIARES --------------------------------------
-     */
-    private double filtrarVelocidade(double velAtual, double velMax, double velMin) {
-        double velocidade = aplicaVelocidadeMaxima(velAtual, velMax);
-        double velocidadeFinal = aplicaVelocidadeMinima(velocidade, velMin);
-        return velocidadeFinal;
-    }
-
-    private double aplicaVelocidadeMinima(double velNorm, double min) {
-        if (velNorm == 0)
-            return 0;
-        if (Math.abs(velNorm) < min) {
-            return Math.copySign(min, velNorm);
-        }
-        return velNorm;
-    }
-
-    private double aplicaVelocidadeMaxima(double velNorm, double max) {
-        if (velNorm == 0)
-            return 0;
-        if (Math.abs(velNorm) > max) {
-            return Math.copySign(max, velNorm);
-        }
-        return velNorm;
+        //manipuladorAtivo = (motorEixoY.getRPM() != 0 || motorEixoZ.getRPM() != 0);
     }
 }

@@ -7,9 +7,16 @@
 
 package frc.robot;
 
+import edu.wpi.first.wpilibj.DriverStation;
+import edu.wpi.first.wpilibj.RobotController;
+import edu.wpi.first.wpilibj.RobotDrive;
+import edu.wpi.first.wpilibj.RobotState;
 import edu.wpi.first.wpilibj.TimedRobot;
 import edu.wpi.first.wpilibj2.command.Command;
+import edu.wpi.first.wpilibj2.command.CommandBase;
 import edu.wpi.first.wpilibj2.command.CommandScheduler;
+import edu.wpi.first.wpilibj2.command.SequentialCommandGroup;
+import frc.robot.commands.Teste;
 
 /**
  * The VM is configured to automatically run this class, and to call the functions corresponding to
@@ -19,9 +26,9 @@ import edu.wpi.first.wpilibj2.command.CommandScheduler;
  */
 public class Robot extends TimedRobot {
   private Command m_autonomousCommand, teleopCommand;
-
+  
   private RobotContainer m_robotContainer;
-
+  
   /**
    * This function is run when the robot is first started up and should be used for any
    * initialization code.
@@ -32,7 +39,7 @@ public class Robot extends TimedRobot {
     // autonomous chooser on the dashboard.
     m_robotContainer = new RobotContainer();
   }
-
+  
   /**
    * This function is called every robot packet, no matter the mode. Use this for items like
    * diagnostics that you want ran during disabled, autonomous, teleoperated and test.
@@ -44,45 +51,54 @@ public class Robot extends TimedRobot {
   public void robotPeriodic() {
     // Runs the Scheduler.  This is responsible for polling buttons, adding newly-scheduled
     // commands, running already-scheduled commands, removing finished or interrupted commands,
-    // and running subsystem periodic() methods.  This must be called from the robot's periodic
-    // block in order for anything in the Command-based framework to work.
     CommandScheduler.getInstance().run();
+    // DriverStation.getInstance().InAutonomous(true);
+    // block in order for anything in the Command-based framework to work.
+    // RobotContainer.subPainel.piscarLed();
+    
   }
-
+  
   /**
    * This function is called once each time the robot enters Disabled mode.
    */
   @Override
   public void disabledInit() {
   }
-
+  
   @Override
   public void disabledPeriodic() {
+    //RobotContainer.subPainel.setStopped(false);
   }
-
+  
   /**
    * This autonomous runs the autonomous command selected by your {@link RobotContainer} class.
    */
   @Override
   public void autonomousInit() {
+    RobotContainer.subDrive.giroscopio.reset();
+    //RobotContainer.subPainel.setStopped(true);
+    //RobotContainer.subDrive.atualizarPosicaoAtual(RobotContainer.mapa.nodes.get("A"));
     m_autonomousCommand = m_robotContainer.getAutonomousCommand();
     teleopCommand = m_robotContainer.getTeleopCommand();
-
+    
     if (teleopCommand != null) {
       teleopCommand.cancel();
     }
-
+    
     // schedule the autonomous command (example)
     if (m_autonomousCommand != null) {
       m_autonomousCommand.schedule();
     }
+    // and running subsystem periodic() methods.  This must be called from the robot's periodic
+    
   }
-
+  
   /**
    * This function is called periodically during autonomous.
    */
   @Override
   public void autonomousPeriodic() {
+    //RobotContainer.subPainel.setRunning(true);
   }
 
   @Override

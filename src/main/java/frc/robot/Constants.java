@@ -2,20 +2,20 @@ package frc.robot;
 
 public final class Constants {
     public static int titanID = 42,
-    roda1 = 1,
+    roda1 = 0,
     roda2 = 3,
-    motorDirecao = 2,
-    motorElevador = 0;
+    motorElevadorZ = 2,
+    motorElevadorY = 1,
+    servoDirecao = 9;
     
-
-    public static double distPorTick = 73.92 / 1464,
-    raioRoda = 62.5;
+    public static double distPorTick = 73.92 / 1464 ,
+    raioRoda = 62.26;
 
     public static double distPorTickRoda = (2 * Math.PI * raioRoda) / 1464;
 
     /* ----------- ELEVADOR ----------- */
 
-    public static double raioEngrenagem_Elevador = (22.5 / 2),
+    public static double raioEngrenagem_Elevador = (23.75),
     distPorRevElevador = 2 * Math.PI * raioEngrenagem_Elevador;
     
     public static double filtrarVelocidade(double velAtual, double velMax, double velMin) {

@@ -27,7 +27,7 @@ public class SensorFiltro {
 
     double ultimoTurnoSharp = 0;
     int sensorIndexSharp = 0;
-    /*public final void sharps( Sharp sensor1, Sharp sensor2 ) {
+    public final void sharps( Sharp sensor1, Sharp sensor2 ) {
 
         final int tempoDeTurno = 0; // [ms]
         double turnoAtual = System.currentTimeMillis();
@@ -46,5 +46,5 @@ public class SensorFiltro {
             // atualiza o tempo do ultimo turno
             ultimoTurnoSharp = turnoAtual;
         }
-    }*/
+    }
 }

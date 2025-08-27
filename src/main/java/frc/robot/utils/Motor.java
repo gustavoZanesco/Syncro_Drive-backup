@@ -59,11 +59,11 @@ public class Motor {
 
     public void setAngulo(double setPoint) {
 
-        double erro = setPoint - anguloAtual;
+        double erro = setPoint - (anguloAtual * 0.5);
 
         double velocidade = erro;
         
-        noAngulo = false;
+        noAngulo = Math.abs(erro) < 0.5;
 
         velocidade = Constants.filtrarVelocidade(velocidade, 25, 15);
         
@@ -74,6 +74,10 @@ public class Motor {
         }
 
         setVelocidade(velocidade);
+    }
+
+    public double getAngulo() {
+        return anguloAtual;
     }
 
     public boolean getNoAngulo() {
@@ -110,14 +114,12 @@ public class Motor {
     public double getEncoderAtual() { return encoder.getRaw(); }
 
     public void atualizarTelemetria() {
-        anguloAtual = ((getEncoderAtual() * 360) / (1464 * 3)); 
+        anguloAtual = ((getEncoderAtual() * 360) / (1464)); 
         angulo.setString(anguloAtual + "");
         pulsoEncoder.setString(encoder.getRaw() + "");
         rpm.setString(motor.getRPM() + "");
         variacaoEnc.setString(getVariacaoEncoder() + "");
         temperatura.setString((int) motor.getControllerTemp() + " C");
-        pid.setP(kp.getDouble(0.65));
-        pid.setI(ki.getDouble(0.4));
     }
 
     public double getFimDeCurso_High() {

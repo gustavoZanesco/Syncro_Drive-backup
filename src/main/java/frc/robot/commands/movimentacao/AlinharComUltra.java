@@ -10,7 +10,7 @@ public class AlinharComUltra extends CommandBase {
     
     private boolean alinhado = false;
     private double tempoAlvoAtingido = 0;
-    private double TEMPO_ESTAVEL_MS = 500;
+    private double TEMPO_ESTAVEL_MS = 100;
 
     public AlinharComUltra() { 
         addRequirements(subBase); /*addRequirements(subManipulador);*/
@@ -26,35 +26,20 @@ public class AlinharComUltra extends CommandBase {
     public void execute() { 
         subBase.chegouZ = false;
         //subManipulador.movimentarElevador(15);
-
-        
-        /*if ( etapa == 0 && subBase.ultraEsquerdo.getDistancia() > 30 /*&& subManipulador.noSetPoint()*///) { 
-            /*subBase.omnidiretional_Global( 0, 13.35, 0 ); 
-            if ( subBase.ultraEsquerdo.getDist  ancia() < 32 ) { etapa = 1; }
-            
-        }*/
         
         double erro = subBase.ultraEsquerdo.getDistancia() - subBase.ultraDireito.getDistancia();
         //boolean endCommand = false;
         double vZr;
 
-        //boolean sensorParado = variacaoSensor2 == 0;
+        vZr = erro * 5;
 
-        /*if (estavel(sensorParado)) {
-            vZr = 10;
-        } else {*/
-            vZr = erro * 5;
-        //}
 
-        boolean alinhado = Math.abs(erro) <= 0.3;
+        boolean alinhado = Math.abs(erro) <= 0.45;
 
         if ( alinhado ) { subBase.pararMotoresTracao(); }
-        else { subBase.synchroDrive_local(0, 0, vZr); }
+        else { subBase.movimentar(0, vZr); }
     
         this.alinhado = alinhado;
-        /*if (estavel(alinhado)) { subBase.resetZ(); }
-        this.alinhado = estavel(alinhado);
-        SmartDashboard.putString("VZR", vZr + "");*/
     }
 
     @Override
@@ -65,6 +50,7 @@ public class AlinharComUltra extends CommandBase {
         subBase.resetZ();
         subBase.pararMotoresTracao();
         subBase.chegouZ = true;
+        subBase.posicaoDesejadaZ = subBase.getPosicaoAtual().getZ();
     }
 
     public boolean estavel ( boolean alinhado ) {

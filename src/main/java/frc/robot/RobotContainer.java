@@ -1,74 +1,84 @@
-/*----------------------------------------------------------------------------*/
-/* Copyright (c) 2018-2019 FIRST. All Rights Reserved.                        */
-/* Open Source Software - may be modified and shared by FRC teams. The code   */
-/* must be accompanied by the FIRST BSD license file in the root directory of */
-/* the project.                                                               */
-/*----------------------------------------------------------------------------*/
-
 package frc.robot;
 
-import edu.wpi.first.wpilibj.GenericHID;
-import edu.wpi.first.wpilibj.XboxController;
-//import frc.robot.commands.ExampleCommand;
-//import frc.robot.subsystems.ExampleSubsystem;
-import edu.wpi.first.wpilibj2.command.Command;
-import edu.wpi.first.wpilibj2.command.SequentialCommandGroup;
-import frc.robot.commands.movimentacao.AlinharComUltra;
-import frc.robot.commands.movimentacao.DeslocamentoXYZ;
+import java.time.Period;
+
+import edu.wpi.first.wpilibj.TimedRobot;
+import edu.wpi.first.wpilibj2.command.*;
+import frc.robot.commands.performance.*;
+import frc.robot.commands.ColetarCaixas;
+import frc.robot.commands.MovimentoInicial;
+import frc.robot.commands.Teste;
+import frc.robot.commands.manipulador.comandosBasicos.GirarBase;
+import frc.robot.commands.manipulador.comandosBasicos.MovimentarElevador;
+import frc.robot.commands.movimentacao.*;
 import frc.robot.commands.movimentacao.teleoperado.Teleop;
 import frc.robot.gamepad.*;
-import frc.robot.subsystems.DriveSubsystem;
-import frc.robot.subsystems.ManipuladorSubsystem;
+import frc.robot.subsystems.*;
+import frc.robot.subsystems.DriveSubsystem.PosicaoRodas;
+import frc.robot.utils.*;
 
-/**
- * This class is where the bulk of the robot should be declared.  Since Command-based is a
- * "declarative" paradigm, very little robot logic should actually be handled in the {@link Robot}
- * periodic methods (other than the scheduler calls).  Instead, the structure of the robot
- * (including subsystems, commands, and button mappings) should be declared here.
- */
 public class RobotContainer {
-  // The robot's subsystems and commands are defined here...
-  //private final ExampleSubsystem m_exampleSubsystem = new ExampleSubsystem();
-
-  //private final ExampleCommand m_autoCommand = new ExampleCommand(m_exampleSubsystem);
 
   public static DriveSubsystem subDrive = new DriveSubsystem();
   public static ManipuladorSubsystem subManipulador = new ManipuladorSubsystem();
+  public static QRcodeSubsystem subQRcode = new QRcodeSubsystem();
+  //public static PainelSubsystem subPainel = new PainelSubsystem();
 
   public static OI oi = new OI();
 
-  /**
-   * The container for the robot.  Contains subsystems, OI devices, and commands.
-   */
+  public static Mapa mapa = new Mapa();
+
+  public static BancoGrupos bancoGrupos = new BancoGrupos();
+
+  public static BancoBlocos bancoBlocos = new BancoBlocos(mapa);
+  
   public RobotContainer() {
-    // Configure the button bindings
-    configureButtonBindings();
+    
+    bancoGrupos.adicionarGrupo(new Grupo(new String[] {"R", "R", "R", "R"}, "A"));
+    bancoGrupos.adicionarGrupo(new Grupo(new String[] {"X", "X", "X", "X"}, "B"));
+    bancoGrupos.adicionarGrupo(new Grupo(new String[] {"X", "X", "X", "X"}, "C"));
+    bancoBlocos.adicionarBloco("null", "C-1");
+    bancoBlocos.adicionarBloco("null", "C-2");
+    bancoBlocos.adicionarBloco("null", "C-3");
+    bancoBlocos.adicionarBloco("null", "C-4");
+    bancoBlocos.adicionarBloco("null", "C-5");
+    bancoBlocos.adicionarBloco("null", "C-6");
+    bancoBlocos.adicionarBloco("null", "D-1");
+    bancoBlocos.adicionarBloco("null", "D-2");
+    bancoBlocos.adicionarBloco("null", "D-3");
+    bancoBlocos.adicionarBloco("null", "D-4");
+    bancoBlocos.adicionarBloco("null", "D-5");
+    bancoBlocos.adicionarBloco("null", "D-6");
   }
 
-  /**
-   * Use this method to define your button->command mappings.  Buttons can be created by
-   * instantiating a {@link GenericHID} or one of its subclasses ({@link
-   * edu.wpi.first.wpilibj.Joystick} or {@link XboxController}), and then passing it to a
-   * {@link edu.wpi.first.wpilibj2.command.button.JoystickButton}.
-   */
-  private void configureButtonBindings() {
-  }
-
-
-  /**
-   * Use this to pass the autonomous command to the main {@link Robot} class.
-   *
-   * @return the command to run in autonomous
-   */
   public Command getAutonomousCommand() {
     // An ExampleCommand will run in autonomous
+    /*return new SequentialCommandGroup(
+      new DeslocamentoXYZ(0, -1000, 0),
+      new DeslocamentoXYZ(0, 0, 0),
+      new DeslocamentoXYZ(0, 0, 90)
+    );*/
+ 
     return new SequentialCommandGroup(
-      new DeslocamentoXYZ(0, 1000, 0),
-      new DeslocamentoXYZ(0, 0  , 0)
+      //new MovimentarElevador(10)
+      //new GirarBase("inicial")
+      //new Teste(),
+      new DeslocamentoXYZ(new Posicao(-600, 0, 90))
+      //new MovimentoInicial(),
+      /*new AproximarFrente(25)*/
+      /*new ObterQRCODE_DefinirGrupos(mapa),
+      new LerBlocos_ArmazenarPosicoes(mapa),
+      //new MovimentoAstar(mapa, "E", "A")
+      new ColetarCaixas(bancoGrupos, bancoBlocos, mapa)*/
+      //new MovimentoAstar(mapa, "E", "A")
+      /*new MovimentoAstar(mapa, "A", "J"),
+      new MovimentoAstar(mapa, "J", "A")*/
+      //new LerQRCODE()
+      //new AlinharRodas(PosicaoRodas.EIXO_Y)
     );
   }
 
   public Command getTeleopCommand() {
-    return new Teleop();
+    return new Teleop(); 
   }
 }
